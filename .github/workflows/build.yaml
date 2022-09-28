@@ -1,0 +1,21 @@
+name: build
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '^1.19.1'
+      - run: go version
+      - run: env GOOS=darwin GOARCH=amd64 go build -o bin/s3server-darwin_amd64
+      - run: env GOOS=darwin GOARCH=arm64 go build -o bin/s3server-darwin_arm64
+      - run: env GOOS=linux GOARCH=386 go build -o bin/s3server-linux_386
+      - run: env GOOS=linux GOARCH=arm64 go build -o bin/s3server-linux_arm64
+      - run: env GOOS=linux GOARCH=amd64 go build -o bin/s3server-linux_amd64
+      - name: Archive binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: binaries
+          path: bin/s3server-*

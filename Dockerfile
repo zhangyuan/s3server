@@ -13,8 +13,13 @@ RUN go build
 
 FROM alpine:3.16.2
 
-WORKDIR /
+ARG USER=default
+ENV HOME /home/$USER
+RUN adduser -D $USER
 
-COPY --from=builder /build/s3server .
+COPY --from=builder /build/s3server /usr/local/bin/
+
+USER $USER
+WORKDIR $HOME
 
 CMD [ "s3server" ]

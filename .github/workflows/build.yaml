@@ -19,3 +19,8 @@ jobs:
         with:
           name: binaries
           path: bin/s3server-*
+  build-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: docker build .

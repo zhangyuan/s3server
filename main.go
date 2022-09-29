@@ -16,18 +16,30 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
+	var args Args
+	if len(os.Args) == 1 {
+		fmt.Println("Usage: s3server bucketName rootDirectory")
+	} else if len(os.Args) == 2 {
+		args.Bucket = os.Args[1]
+		args.Prefix = ""
+	} else if len(os.Args) == 3 {
+		args.Bucket = os.Args[1]
+		args.Prefix = strings.TrimLeft(os.Args[2], "/")
+	} else {
 		log.Fatalf("invalid arguments.")
 	}
 
-	bucket := os.Args[1]
-
-	if err := serve(bucket); err != nil {
+	if err := serve(&args); err != nil {
 		log.Fatalf("error occurs, %v", err)
 	}
 }
 
-func serve(bucket string) error {
+type Args struct {
+	Bucket string
+	Prefix string
+}
+
+func serve(args *Args) error {
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 
 	if err != nil {
@@ -39,7 +51,7 @@ func serve(bucket string) error {
 	r := gin.Default()
 
 	r.Use(func(ctx *gin.Context) {
-		output, err := GetObjectByPath(svc, bucket, ctx.Request.URL.Path)
+		output, err := GetObjectByPath(svc, args.Bucket, args.Prefix, ctx.Request.URL.Path)
 
 		if err != nil {
 			var nsk *types.NoSuchKey
@@ -58,6 +70,7 @@ func serve(bucket string) error {
 
 		for {
 			n, err := reader.Read(b)
+
 			writer.Write(b[:n])
 
 			if err == io.EOF {
@@ -73,21 +86,21 @@ func serve(bucket string) error {
 	return nil
 }
 
-func GetObjectByPath(svc *s3.Client, bucket string, path string) (*s3.GetObjectOutput, error) {
-	path = strings.TrimLeft(path, "/")
+func GetObjectByPath(svc *s3.Client, bucket string, prefix string, path string) (*s3.GetObjectOutput, error) {
+	objectKey := strings.TrimRight(strings.Join([]string{strings.TrimRight(prefix, "/"), strings.TrimLeft(path, "/")}, "/"), "/")
 
-	if path == "" || strings.HasSuffix(path, "/") {
-		path = fmt.Sprintf("%sindex.html", strings.TrimLeft(path, "/"))
-		return GetObject(svc, bucket, path)
+	if objectKey == "" {
+		objectKey = fmt.Sprintf("%sindex.html", strings.TrimLeft(objectKey, "/"))
+		return GetObject(svc, bucket, objectKey)
 	}
 
-	output, err := GetObject(svc, bucket, path)
+	output, err := GetObject(svc, bucket, objectKey)
 
 	var nsk *types.NoSuchKey
 
 	if errors.As(err, &nsk) {
-		path = fmt.Sprintf("%s/index.html", path)
-		return GetObject(svc, bucket, path)
+		objectKey = fmt.Sprintf("%s/index.html", objectKey)
+		return GetObject(svc, bucket, objectKey)
 	} else {
 		return output, err
 	}

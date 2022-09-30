@@ -80,7 +80,7 @@ func serve(args *Args) error {
 			writer.Write(b[:n])
 		}
 
-		ctx.Abort(200)
+		ctx.Abort()
 	})
 
 	r.Run(":5050")

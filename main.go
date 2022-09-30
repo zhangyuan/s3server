@@ -65,6 +65,7 @@ func serve(args *Args) error {
 			return
 		}
 
+		ctx.Status(200)
 		b := make([]byte, 128)
 		reader := output.Body
 		writer := ctx.Writer
@@ -72,15 +73,14 @@ func serve(args *Args) error {
 		for {
 			n, err := reader.Read(b)
 
-			writer.Write(b[:n])
-
-			if err == io.EOF {
-				writer.Flush()
+			if n == 0 && err == io.EOF {
 				break
 			}
+
+			writer.Write(b[:n])
 		}
 
-		ctx.AbortWithStatus(200)
+		ctx.Abort(200)
 	})
 
 	r.Run(":5050")

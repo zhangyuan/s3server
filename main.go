@@ -59,6 +59,7 @@ func serve(args *Args) error {
 			if errors.As(err, &nsk) {
 				ctx.AbortWithStatus(404)
 			} else {
+				fmt.Printf("%v", err)
 				ctx.AbortWithStatus(500)
 			}
 			return
@@ -87,7 +88,7 @@ func serve(args *Args) error {
 }
 
 func GetObjectByPath(svc *s3.Client, bucket string, prefix string, path string) (*s3.GetObjectOutput, error) {
-	objectKey := strings.TrimRight(strings.Join([]string{strings.TrimRight(prefix, "/"), strings.TrimLeft(path, "/")}, "/"), "/")
+	objectKey := strings.Trim(strings.Join([]string{strings.TrimRight(prefix, "/"), strings.TrimLeft(path, "/")}, "/"), "/")
 
 	if objectKey == "" {
 		objectKey = fmt.Sprintf("%sindex.html", strings.TrimLeft(objectKey, "/"))
